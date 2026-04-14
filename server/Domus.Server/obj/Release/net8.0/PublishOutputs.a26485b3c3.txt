@@ -1,0 +1,4 @@
+G:\Repositories\Domus\publish\Domus.Server\Domus.Server.exe
+G:\Repositories\Domus\publish\Domus.Server\Domus.Server.dll
+G:\Repositories\Domus\publish\Domus.Server\Domus.Server.deps.json
+G:\Repositories\Domus\publish\Domus.Server\Domus.Server.runtimeconfig.json
