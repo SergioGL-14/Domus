@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Domus</title>
+  <script>
+    (function () {
+      var path = window.location.pathname || "/";
+      var lastSlashIndex = path.lastIndexOf("/");
+      var lastPart = path.slice(lastSlashIndex + 1);
+      var basePath = path;
+
+      if (!basePath.endsWith("/")) {
+        basePath = lastPart.indexOf(".") >= 0
+          ? path.slice(0, lastSlashIndex + 1)
+          : path + "/";
+      }
+
+      window.__DOMUS_BASE_PATH__ = basePath || "/";
+
+      var stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href = window.__DOMUS_BASE_PATH__ + "styles/main.css";
+      document.head.appendChild(stylesheet);
+    })();
+  </script>
+</head>
+<body>
+  <div id="runtimeErrorBanner" class="runtime-error-banner" hidden></div>
+
+  <div id="appShell" class="app-shell route-home">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#fff8f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="7" width="26" height="20" rx="2"></rect>
+            <path d="M3 12h26"></path>
+            <path d="M9 7V4"></path>
+            <path d="M23 7V4"></path>
+            <rect x="8" y="16" width="5" height="5" rx="1"></rect>
+            <path d="M17 18h6"></path>
+            <path d="M17 22h4"></path>
+          </svg>
+        </div>
+        <div class="brand-copy">
+          <p class="eyebrow">Gestion visual de vivienda, plantas y parcela</p>
+          <h1>Domus</h1>
+          <p id="projectMeta" class="project-meta"></p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <nav class="page-nav" id="pageNav" aria-label="Secciones principales">
+          <button type="button" class="page-tab active" data-route="home">Inicio</button>
+          <button type="button" class="page-tab" data-route="editor">Editor</button>
+          <button type="button" class="page-tab" data-route="reforms">Reformas</button>
+          <button type="button" class="page-tab" data-route="budgets">Presupuestos</button>
+          <button type="button" class="page-tab" data-route="documents">Documentos</button>
+        </nav>
+
+        <div class="project-transfer-actions" aria-label="Copias del proyecto">
+          <button type="button" class="top-btn" id="exportProjectBtn">Exportar</button>
+          <button type="button" class="top-btn" id="importProjectBtn">Importar</button>
+          <input type="file" id="importProjectInput" accept="application/json,.json" hidden />
+        </div>
+
+        <div class="search-box global-search-box">
+          <div class="search-box-head">
+            <span>Buscar en el proyecto</span>
+            <button type="button" class="search-clear-btn" id="globalSearchClearBtn" hidden>Limpiar</button>
+          </div>
+          <input type="search" id="globalSearch" autocomplete="off" placeholder="Planta, jardin, enchufe, mejora..." />
+          <section class="global-search-results" id="globalSearchResults" hidden aria-label="Resultados de busqueda global"></section>
+        </div>
+      </div>
+    </header>
+
+    <main class="studio-layout">
+      <aside class="left-rail">
+        <article class="rail-card tool-rail-card editor-only-control">
+          <div id="toolRibbon" class="tool-ribbon" role="toolbar" aria-label="Herramientas principales del editor"></div>
+        </article>
+      </aside>
+
+      <section class="editor-stage">
+        <div class="stage-top">
+          <div class="stage-top-copy">
+            <p class="section-kicker" id="stageKicker">Plano principal</p>
+            <h2 id="stageTitle">Inicio del proyecto</h2>
+          </div>
+          <div class="stage-top-actions">
+            <button
+              type="button"
+              class="soft-btn stage-filter-toggle"
+              id="stageFilterToggleBtn"
+              aria-label="Abrir filtros"
+              aria-expanded="false"
+              aria-controls="supportFiltersBox"
+              hidden
+            >
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M4 6H20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                <path d="M7 12H17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                <path d="M10 18H14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+              </svg>
+            </button>
+          </div>
+          <section class="support-filters-box" id="supportFiltersBox" hidden aria-label="Filtros de apoyo">
+            <div class="support-filters-head">
+              <p class="section-kicker" id="supportFiltersKicker">Filtros de apoyo</p>
+              <p class="support-filters-copy" id="supportFiltersCopy">Busca texto dentro de reformas, notas, presupuestos, documentos e inventario.</p>
+            </div>
+            <div class="support-filters-row">
+              <label class="field support-filter-field">
+                <span id="supportSearchLabel">Contenido</span>
+                <input type="search" id="supportSearchInput" placeholder="Humedad, dormitorio, presupuesto, contrato..." />
+              </label>
+              <button type="button" class="soft-btn" id="supportSearchClearBtn">Limpiar</button>
+            </div>
+          </section>
+        </div>
+
+        <section id="reformsHub" class="reforms-hub" hidden></section>
+
+        <article class="canvas-card editor-canvas-card">
+          <div class="editor-canvas-dock editor-only-control">
+            <div class="dock-quick-actions">
+              <button type="button" class="soft-btn" id="undoBtn" title="Deshacer (Ctrl+Z)">&#8630;</button>
+              <button type="button" class="soft-btn" id="redoBtn" title="Rehacer (Ctrl+Y)">&#8631;</button>
+              <div class="toolbar-divider"></div>
+              <button type="button" class="soft-btn" id="gridToggleBtn" title="Mostrar u ocultar rejilla">&#x2637;</button>
+              <button type="button" class="soft-btn" id="snapToggleBtn" title="Ajuste magnetico a rejilla">&#x25CE;</button>
+              <div class="toolbar-divider"></div>
+              <span class="autosave-badge" id="autosaveBadge"><span class="autosave-dot"></span>Guardado</span>
+              <div class="dock-zoom-group">
+                <button type="button" class="soft-btn dock-view-btn" id="layerModalToggleBtn" title="Capas y apoyo" aria-label="Abrir capas y apoyo" aria-haspopup="dialog" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <path d="M2.8 12C4.9 8.1 8.1 6 12 6C15.9 6 19.1 8.1 21.2 12C19.1 15.9 15.9 18 12 18C8.1 18 4.9 15.9 2.8 12Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                    <circle cx="12" cy="12" r="3.1" fill="currentColor"></circle>
+                  </svg>
+                </button>
+                <button type="button" class="soft-btn" id="zoomOutBtn" aria-label="Alejar plano">-</button>
+                <button type="button" class="soft-btn" id="zoomResetBtn">100%</button>
+                <button type="button" class="soft-btn" id="zoomInBtn" aria-label="Acercar plano">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-dock-grid editor-only-control">
+            <div class="toolbar-status">
+              <strong id="activeToolTitle">Seleccion</strong>
+              <p class="helper-copy" id="toolHint"></p>
+            </div>
+
+            <div class="editor-dock-main">
+              <div id="presetPanel" class="preset-panel"></div>
+              <div class="toolbar-quick-actions">
+                <button type="button" class="soft-btn" id="stopToolBtn">Salir</button>
+                <button type="button" class="soft-btn" id="finishRoomBtn">Cerrar estancia</button>
+                <button type="button" class="soft-btn" id="cancelDraftBtn">Cancelar</button>
+                <button type="button" class="soft-btn" id="clearSelectionBtn">Limpiar</button>
+              </div>
+              <p class="helper-copy" id="presetHelperCopy" style="display:none"></p>
+              <div id="customFurnitureTools" class="custom-furniture-tools"></div>
+            </div>
+          </div>
+
+          <span id="projectTitle" hidden></span>
+          <span id="projectSubtitle" hidden></span>
+
+          <div class="canvas-shell">
+            <div class="canvas-wrap">
+              <svg id="planCanvas" class="plan-canvas" xmlns="http://www.w3.org/2000/svg" aria-label="Plano de vivienda editable"></svg>
+              <div id="homeFloorStepper" class="home-floor-stepper" hidden>
+                <button type="button" class="home-floor-stepper-btn" id="homeFloorUpBtn" aria-label="Subir planta">▲</button>
+                <div class="home-floor-stepper-current">
+                  <span class="home-floor-stepper-kicker">Planta activa</span>
+                  <strong id="homeFloorLabel">Planta</strong>
+                </div>
+                <button type="button" class="home-floor-stepper-btn" id="homeFloorDownBtn" aria-label="Bajar planta">▼</button>
+              </div>
+              <div id="canvasHint" class="canvas-hint"></div>
+            </div>
+          </div>
+          <div id="inventoryPanel" class="panel"></div>
+        </article>
+
+        <article class="board-card info-panel-card">
+          <div id="inspectorPanel" class="panel active"></div>
+          <div class="home-support-column home-left-support">
+            <div id="reformsPanel" class="panel"></div>
+            <div id="notesPanel" class="panel"></div>
+          </div>
+          <div class="home-support-column home-right-support">
+            <div id="budgetsPanel" class="panel"></div>
+            <div id="documentsPanel" class="panel"></div>
+          </div>
+        </article>
+      </section>
+
+      <aside class="right-rail">
+        <article class="rail-card">
+          <p class="section-kicker">Niveles</p>
+          <h2>Plantas</h2>
+          <div id="floorList" class="floor-list"></div>
+          <div class="form-card">
+            <strong>Alta rapida</strong>
+            <div class="form-grid floor-form-grid">
+              <label class="field">
+                <span>Modelo</span>
+                <select id="floorTemplateInput"></select>
+              </label>
+              <label class="field">
+                <span>Nombre</span>
+                <input type="text" id="floorNameInput" placeholder="Planta baja" />
+              </label>
+              <label class="field">
+                <span>Nivel</span>
+                <input type="number" id="floorLevelInput" value="0" />
+              </label>
+            </div>
+            <div class="toggle-row">
+              <button type="button" class="soft-btn" id="submitFloorBtn">Crear planta</button>
+            </div>
+            <p class="helper-copy">La parcela la puedes usar para jardin, patio, accesos o linderos.</p>
+          </div>
+          <div class="floor-actions-grid">
+            <button type="button" class="soft-btn action-span-2" id="duplicateFloorBtn">Duplicar planta</button>
+            <button type="button" class="soft-btn" id="renameFloorBtn">Editar planta</button>
+            <button type="button" class="soft-btn" id="deleteFloorBtn">Borrar planta</button>
+            <button type="button" class="soft-btn action-span-2" id="exteriorOnlyBtn">Solo exterior</button>
+          </div>
+        </article>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      function showRuntimeError(message) {
+        var banner = document.getElementById("runtimeErrorBanner");
+        if (!banner) return;
+        banner.hidden = false;
+        banner.textContent = message;
+      }
+
+      window.addEventListener("error", function (event) {
+        showRuntimeError("Error de JavaScript: " + (event.message || "sin detalle"));
+      });
+
+      window.addEventListener("unhandledrejection", function (event) {
+        var reason = event && event.reason ? String(event.reason) : "promesa rechazada sin detalle";
+        showRuntimeError("Error de JavaScript: " + reason);
+      });
+    })();
+  </script>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <dialog id="layerModal" class="studio-modal layer-modal">
+    <div class="studio-modal-inner">
+      <div class="modal-header">
+        <div class="modal-copy">
+          <strong>Capas y apoyo</strong>
+          <p>Activa o esconde lo que quieres ver en el plano.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="layerModalCloseBtn" aria-label="Cerrar">&#x2715;</button>
+      </div>
+      <div id="layerList" class="layer-list"></div>
+    </div>
+  </dialog>
+
+  <dialog id="furnitureModal" class="studio-modal">
+    <div class="studio-modal-inner">
+      <div class="modal-header">
+        <strong>Nuevo mueble personalizado</strong>
+        <button type="button" class="modal-close-btn" id="furnitureModalCloseBtn" aria-label="Cerrar">&#x2715;</button>
+      </div>
+      <div class="field-grid compact-grid">
+        <label class="field full">
+          <span>Nombre</span>
+          <input type="text" id="customFurnitureName" placeholder="Macetero grande" />
+        </label>
+        <label class="field">
+          <span>Ancho cm</span>
+          <input type="number" id="customFurnitureWidth" min="20" step="5" value="100" />
+        </label>
+        <label class="field">
+          <span>Fondo cm</span>
+          <input type="number" id="customFurnitureHeight" min="20" step="5" value="100" />
+        </label>
+        <label class="field">
+          <span>Forma</span>
+          <select id="customFurnitureShape">
+            <option value="rounded">Rectangular</option>
+            <option value="round">Redonda</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Zona</span>
+          <select id="customFurnitureZone">
+            <option value="interior">Interior</option>
+            <option value="exterior">Exterior</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="soft-btn" id="furnitureModalCancelBtn">Cancelar</button>
+        <button type="button" class="soft-btn active" data-custom-furniture-action="create">Guardar mueble</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="floorDuplicateModal" class="studio-modal">
+    <div class="studio-modal-inner">
+      <div class="modal-header">
+        <div class="modal-copy">
+          <strong>Duplicar planta</strong>
+          <p id="floorDuplicateModalCopy">Crea una copia completa de la planta activa.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="floorDuplicateModalCloseBtn" aria-label="Cerrar">&#x2715;</button>
+      </div>
+      <form id="floorDuplicateForm" class="add-form-body support-modal-form">
+        <label class="field full">
+          <span>Nombre de la copia</span>
+          <input class="field-input" type="text" id="floorDuplicateNameInput" required />
+        </label>
+        <label class="field full">
+          <span>Nivel numerico</span>
+          <input class="field-input" type="number" id="floorDuplicateLevelInput" required />
+        </label>
+        <div class="form-actions">
+          <button type="button" class="soft-btn" id="floorDuplicateCancelBtn">Cancelar</button>
+          <button type="submit" class="soft-btn active">Duplicar planta</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="supportEntryModal" class="studio-modal support-entry-modal">
+    <div class="studio-modal-inner">
+      <div class="modal-header">
+        <div class="modal-copy">
+          <strong id="supportEntryModalTitle">Nuevo elemento</strong>
+          <p id="supportEntryModalCopy">Rellena los datos y guarda.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="supportEntryModalCloseBtn" aria-label="Cerrar">&#x2715;</button>
+      </div>
+      <div id="supportEntryModalBody"></div>
+      <div class="modal-actions">
+        <button type="button" class="soft-btn" id="supportEntryModalCancelBtn">Cancelar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="supportDetailModal" class="studio-modal support-entry-modal">
+    <div class="studio-modal-inner">
+      <div class="modal-header">
+        <div class="modal-copy">
+          <strong id="supportDetailModalTitle">Detalle</strong>
+          <p id="supportDetailModalCopy">Informacion del elemento.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="supportDetailModalCloseBtn" aria-label="Cerrar">&#x2715;</button>
+      </div>
+      <div id="supportDetailModalBody"></div>
+      <div class="modal-actions">
+        <button type="button" class="soft-btn" id="supportDetailModalEditBtn" hidden>Editar</button>
+        <button type="button" class="soft-btn danger" id="supportDetailModalDeleteBtn" hidden>Borrar</button>
+        <button type="button" class="soft-btn" id="supportDetailModalCancelBtn">Cerrar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (function () {
+      var storageKey = "casabase_studio_v7";
+
+      function getBasePath() {
+        return window.__DOMUS_BASE_PATH__ || "/";
+      }
+
+      function getProjectPayload() {
+        var stored = localStorage.getItem(storageKey);
+        if (stored) return stored;
+        return JSON.stringify({
+          project: { name: "Domus", activeFloorId: "floor-ground", updatedAt: new Date().toISOString() },
+          canvas: { width: 2600, height: 1600, grid: 50, snap: true, showGrid: true, exteriorOnly: false },
+          floors: [{ id: "floor-ground", name: "Planta baja", level: 0, kind: "interior" }]
+        }, null, 2);
+      }
+
+      function downloadProject() {
+        var payload = getProjectPayload();
+        var blob = new Blob([payload], { type: "application/json" });
+        var link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "domus-project-" + new Date().toISOString().slice(0, 10) + ".json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(function () {
+          URL.revokeObjectURL(link.href);
+        }, 1000);
+      }
+
+      async function uploadProject(payload) {
+        if (!/^https?:$/.test(window.location.protocol)) return;
+
+        try {
+          await fetch(getBasePath() + "api/project", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: payload
+          });
+        } catch {
+          // Si la API no esta disponible, al menos queda guardado en este navegador.
+        }
+      }
+
+      async function importProject(fileInput) {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        try {
+          var payload = await file.text();
+          JSON.parse(payload);
+          localStorage.setItem(storageKey, payload);
+          await uploadProject(payload);
+          window.location.reload();
+        } catch {
+          alert("No pude importar ese JSON.");
+        } finally {
+          fileInput.value = "";
+        }
+      }
+
+      function bindTransferButtons() {
+        var exportButton = document.getElementById("exportProjectBtn");
+        var importButton = document.getElementById("importProjectBtn");
+        var importInput = document.getElementById("importProjectInput");
+
+        if (exportButton) {
+          exportButton.addEventListener("click", downloadProject);
+        }
+
+        if (importButton && importInput) {
+          importButton.addEventListener("click", function () {
+            importInput.click();
+          });
+          importInput.addEventListener("change", function () {
+            importProject(importInput);
+          });
+        }
+      }
+
+      bindTransferButtons();
+    })();
+  </script>
+
+  <script>
+    (function () {
+      var entry = document.createElement("script");
+      entry.type = "module";
+      entry.src = (window.__DOMUS_BASE_PATH__ || "/") + "src/main.js";
+      document.body.appendChild(entry);
+    })();
+  </script>
+</body>
+</html>

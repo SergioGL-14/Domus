@@ -1,0 +1,10 @@
+{
+  "name": "domus",
+  "private": true,
+  "type": "module",
+  "description": "Editor tecnico de vivienda y parcela",
+  "version": "0.1.0",
+  "scripts": {
+    "check": "node --check src/main.js && node --check src/app/createApp.js && node --check src/app/state.js && node --check src/app/render.js && node --check src/app/editor.js && node --check src/app/dom.js && node --check src/app/constants.js && node --check src/modules/planner/catalogs.js && node --check src/modules/planner/geometry.js && node --check src/modules/project/projectData.js && node --check src/utils/common.js"
+  }
+}
